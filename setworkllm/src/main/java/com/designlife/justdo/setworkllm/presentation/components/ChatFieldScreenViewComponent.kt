@@ -49,7 +49,7 @@ import com.designlife.justdo.setworkllm.ui.theme.chatViewDescriptionStyle
 import com.designlife.justdo.setworkllm.ui.theme.chatViewHeaderStyle
 
 @Composable
-fun ChatFieldScreenViewComponent(
+internal fun ChatFieldScreenViewComponent(
     color : Color = Color.White,
     isThinking : Boolean,
     chatText : String,
