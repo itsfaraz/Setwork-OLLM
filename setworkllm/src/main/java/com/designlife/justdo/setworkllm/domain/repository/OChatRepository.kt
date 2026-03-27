@@ -1,0 +1,63 @@
+package com.designlife.justdo.setworkllm.domain.repository
+
+import android.util.Log
+import com.designlife.justdo.setworkllm.common.constant.AppURLRouter
+import com.designlife.justdo.setworkllm.data.network.request.ChatSessionRequest
+import com.designlife.justdo.setworkllm.data.network.response.ChatSessionResponse
+import com.designlife.justdo.setworkllm.data.network_service.GithubDynamicURLService
+import com.designlife.justdo.setworkllm.data.network_service.OLLMService
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
+import org.json.JSONObject
+
+class OChatRepository(
+    private val chatService: OLLMService
+) {
+    suspend fun onChatStream(request: ChatSessionRequest): Flow<String> = flow {
+        try {
+            val response = chatService.requestChatSession(request)
+            if (!response.isSuccessful) return@flow
+
+            val reader = response.body()
+                ?.byteStream()
+                ?.bufferedReader() ?: return@flow
+
+            while (true) {
+                val line = reader.readLine() ?: break
+
+                if (line.startsWith("data:")) {
+                    val json = line.removePrefix("data:").trim()
+
+                    if (json.isNotEmpty()) {
+                        try {
+                            val obj = JSONObject(json)
+                            val content = obj.optString("content")
+
+                            if (content.isNotEmpty()) {
+                                emit(content)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun onChatExit() {
+        try {
+            val response = chatService.requestChatSessionKill()
+            response?.let { if (it.isSuccessful) {
+                it.body()?.let {
+                    Log.i("CHAT_REPOSITORY", "onChatExit: ${it.message}")
+                }
+            } }
+        }catch (e : Exception){
+            e.printStackTrace()
+        }
+    }
+}
