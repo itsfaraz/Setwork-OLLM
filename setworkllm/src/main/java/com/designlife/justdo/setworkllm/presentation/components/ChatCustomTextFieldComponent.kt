@@ -1,5 +1,8 @@
 package com.designlife.justdo.setworkllm.presentation.components
 
+import android.content.Context
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -19,6 +22,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -29,10 +33,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.designlife.justdo.setworkllm.R
@@ -45,14 +57,17 @@ import com.designlife.justdo.setworkllm.ui.theme.chatTextPlaceholderStyle
 import com.designlife.justdo.setworkllm.ui.theme.chatTextStyle
 import kotlinx.coroutines.delay
 
-
 @Composable
-fun ChatTextField(
+internal fun ChatTextField(
     isThinking : Boolean,
     chatText : String,
     onChatTextEvent : (text: String) -> Unit,
-    onChatButtonEvent : () -> Unit
+    onChatStartEvent : () -> Unit,
+    onChatStopEvent : () -> Unit
 ) {
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val view = LocalView.current
 
     var thinkText by remember {
         mutableStateOf("Thinking ")
@@ -92,7 +107,8 @@ fun ChatTextField(
             onChatTextEvent(it)
         },
         singleLine = false,
-        cursorBrush = SolidColor(ComponentColorPrimary)
+        cursorBrush = SolidColor(Color.DarkGray),
+        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done)
     ){ innerTextField ->
         Row(
             modifier = Modifier.fillMaxWidth().wrapContentHeight(),
@@ -132,20 +148,45 @@ fun ChatTextField(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End
             ) {
-                IconButton(onClick = {
-                    onChatButtonEvent()
-                }) {
-                    Box(
-                        modifier = Modifier.size(36.dp)
-                            .background(color = Color.White, shape = CircleShape)
-                            .border(width = 1.dp, color = ComponentColorPrimary, shape = CircleShape),
-                        contentAlignment = Alignment.Center
-                    ){
-                        Icon(modifier = Modifier.size(20.dp), painter = painterResource(R.drawable.ic_send), contentDescription = "Send", tint = ComponentColorPrimary)
+                if (isThinking){
+                    IconButton(onClick = {
+                        hideKeyboard(context,view)
+                        onChatStopEvent()
+
+                    }) {
+                        Box(
+                            modifier = Modifier.size(20.dp)
+                                .background(color = Color.White, shape = CircleShape)
+                                .border(width = 1.dp, color = ComponentColorPrimary, shape = CircleShape),
+                            contentAlignment = Alignment.Center
+                        ){
+                            Icon(modifier = Modifier.size(12.dp), painter = painterResource(R.drawable.ic_stop), contentDescription = "Stop Interaction", tint = Red40)
+                        }
+                    }
+                }else{
+                    IconButton(onClick = {
+//                        focusManager?.clearFocus()
+                        hideKeyboard(context,view)
+                        onChatStartEvent()
+                    }) {
+                        Box(
+                            modifier = Modifier.size(20.dp)
+                                .background(color = Color.White, shape = CircleShape)
+                                .border(width = 1.dp, color = ComponentColorPrimary, shape = CircleShape),
+                            contentAlignment = Alignment.Center
+                        ){
+                            Icon(modifier = Modifier.size(12.dp), painter = painterResource(R.drawable.ic_send), contentDescription = "Start Interaction", tint = ComponentColorPrimary)
+                        }
                     }
                 }
+
             }
         }
     }
 
+}
+
+fun hideKeyboard(context: Context, view : View) {
+    val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    imm.hideSoftInputFromWindow(view.windowToken, 0)
 }

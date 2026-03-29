@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -39,7 +40,8 @@ internal fun ChatFieldViewComponent(
     chatText : String,
     chatReplyText : String,
     onChatTextEvent : (text : String) -> Unit,
-    onSendEvent : () -> Unit,
+    onChatStartEvent : () -> Unit,
+    onChatStopEvent : () -> Unit,
     onChatAddEvent : () -> Unit
 ) {
 
@@ -71,8 +73,11 @@ internal fun ChatFieldViewComponent(
                 onChatTextEvent = {
                     onChatTextEvent(it)
                 },
-                onChatButtonEvent = {
-                    onSendEvent()
+                onChatStartEvent = {
+                    onChatStartEvent()
+                },
+                onChatStopEvent = {
+                    onChatStopEvent()
                 }
             )
             Spacer(modifier = Modifier.height(8.dp))

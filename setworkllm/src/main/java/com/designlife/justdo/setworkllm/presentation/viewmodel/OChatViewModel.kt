@@ -1,5 +1,6 @@
 package com.designlife.justdo.setworkllm.presentation.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -9,19 +10,16 @@ import com.designlife.justdo.setworkllm.domain.repository.OChatRepository
 import com.designlife.justdo.setworkllm.domain.usecase.OChatUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 internal class OChatViewModel(
     private val chatRepository : OChatRepository
 ) : ViewModel() {
 
+    private val _chatId = mutableStateOf(0L)
     private val _isStreaming = mutableStateOf(false)
     val isStreaming = _isStreaming
-
 
     private val _chatText = mutableStateOf("")
     val chatText = _chatText
@@ -43,47 +41,80 @@ internal class OChatViewModel(
             is OChatUseCase.OnChatEvent -> {
                 _chatText.value = event.text
             }
-            is OChatUseCase.OnSendEvent -> {
-                onChatSendEvent()
+            is OChatUseCase.OnChatStartEvent -> {
+                onChatSessionStart()
+            }
+            is OChatUseCase.OnChatStopEvent -> {
+                onChatSessionKill()
             }
             is OChatUseCase.OnChatAddEvent -> {
-               //
+                _completeChatReply.value = ""
             }
         }
     }
 
-    private fun onChatSendEvent() {
-        if (_completeChatReply.value.isNotEmpty()){
-            _chatHistory.add(_completeChatReply.value)
+    private fun onChatSessionStart() {
+        viewModelScope.launch {
+            _chatReplyText.value = ""
+            if (_chatText.value.isEmpty()) return@launch
+
+            _isStreaming.value = true
+            _chatId.value = System.currentTimeMillis()
+
+            val request = ChatSessionRequest(
+                prompt = _chatText.value,
+                streaming = true,
+                nPredict = "2048",
+                chatId = _chatId.value.toString()
+            )
+            _chatText.value = ""
+
+
+            try {
+                chatRepository.onChatStream(request)
+                    .flowOn(Dispatchers.IO)
+                    .collect { token ->
+                        _chatReplyText.value += "$token "
+                    }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isStreaming.value = false
+                _completeChatReply.value = _chatReplyText.value
+                _chatReplyText.value = ""
+            }
+        }
+    }
+
+    private fun onChatSessionKill(){
+        try {
+            if (_chatReplyText.value.isNotEmpty()) {
+                _chatHistory.add(_chatReplyText.value)
+                _chatReplyText.value = ""
+                Log.i("TEXT_FLOW", "onChatSessionStart: ${_chatHistory.get(_chatHistory.lastIndex).toString()}")
+            }
+            if (_chatId.value == 0L) return
+            viewModelScope.launch {
+                chatRepository.onChatExit(requestId = _chatId.value.toString())
+                _isStreaming.value = false
+                _chatId.value = 0
+            }
+        }catch (e : Exception){
+            e.printStackTrace()
+        }finally {
+            _chatReplyText.value = ""
             _completeChatReply.value = ""
         }
-        if (_chatText.value.isNotEmpty()) {
-            _isStreaming.value = true
-            _chatReplyText.value = ""
-            val request = ChatSessionRequest(prompt = _chatText.value, streaming = true, nPredict = "2048")
-            _chatText.value = ""
-            val bufferReader = StringBuilder()
-            viewModelScope.launch(Dispatchers.IO) {
-                chatRepository.onChatStream(request).collectLatest { token ->
-                    withContext(Dispatchers.Main.immediate) {
-                        bufferReader.append(token)
-                        _chatReplyText.value = bufferReader.toString()
-                    }
-                }
-                withContext(Dispatchers.Main.immediate){
-                    _isStreaming.value = false
-                    _completeChatReply.value = _chatReplyText.value
-                }
-            }
-        }
+
     }
 
-
     fun onClear(){
+        onChatSessionKill()
         _isStreaming.value = false
         _chatText.value = ""
         _chatReplyText.value = ""
         _completeChatReply.value = ""
+        _chatHistory.clear()
         viewModelScope.cancel()
     }
 

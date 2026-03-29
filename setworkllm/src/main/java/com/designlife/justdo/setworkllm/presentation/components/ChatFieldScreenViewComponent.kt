@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -24,8 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -36,12 +33,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.designlife.justdo.setworkllm.R
-import com.designlife.justdo.setworkllm.ui.theme.ChatBackgroundColorActiveLight
 import com.designlife.justdo.setworkllm.ui.theme.ChatBackgroundColorLight
 import com.designlife.justdo.setworkllm.ui.theme.ComponentColorPrimary
 import com.designlife.justdo.setworkllm.ui.theme.chatReplyTextStyle
@@ -56,7 +53,8 @@ internal fun ChatFieldScreenViewComponent(
     chatReplyText : String,
     chatHistory : List<String>,
     onChatTextEvent : (text : String) -> Unit,
-    onSendEvent : () -> Unit
+    onChatStartEvent : () -> Unit,
+    onChatStopEvent : () -> Unit
 ) {
 
     val scrollState = rememberScrollState()
@@ -142,7 +140,7 @@ internal fun ChatFieldScreenViewComponent(
                                             .border(width = 1.dp, color = ComponentColorPrimary, shape = CircleShape),
                                         contentAlignment = Alignment.Center
                                     ){
-                                        Icon(modifier = Modifier.size(10.dp), painter = painterResource(R.drawable.ic_open_out), contentDescription = "Send", tint = ComponentColorPrimary)
+                                        Icon(modifier = Modifier.size(10.dp), painter = painterResource(R.drawable.ic_open_out), contentDescription = "Open Out", tint = ComponentColorPrimary)
                                     }
                                 }
 
@@ -165,34 +163,42 @@ internal fun ChatFieldScreenViewComponent(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .fillMaxHeight(.48F) // max height constraint
-                        .verticalScroll(scrollState) // makes content scrollable
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState)
+                        .border(width = .2.dp, color = ComponentColorPrimary, shape = RoundedCornerShape(8.dp))// makes content scrollable
                 ) {
                     Text(modifier = Modifier.wrapContentSize().padding(horizontal = 2.dp, vertical = 4.dp), text = chatReplyText, style = chatReplyTextStyle.value, softWrap = true)
 
                 }
                 Spacer(modifier = Modifier.height(16.dp))
+
                 ChatTextField(
                     isThinking = isThinking,
                     chatText = chatText,
                     onChatTextEvent = {
                         onChatTextEvent(it)
                     },
-                    onChatButtonEvent = {
-                        onSendEvent()
+                    onChatStartEvent = {
+                        onChatStartEvent()
+                    },
+                    onChatStopEvent = {
+                        onChatStopEvent()
                     }
                 )
-                Spacer(modifier = Modifier.height(50.dp))
+                Spacer(modifier = Modifier.height(60.dp))
             }
         }
     }
 
 
     AnimatedVisibility(layoutToggle) {
+        val fullViewScrollState = rememberScrollState()
+
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.TopEnd
         ) {
-            Column(modifier = Modifier.fillMaxSize().background(color = Color.White)) {
+            Column(modifier = Modifier.fillMaxSize().background(color = Color.White).verticalScroll(fullViewScrollState)) {
                 Spacer(modifier = Modifier.height(38.dp))
                 Text(modifier = Modifier
                     .fillMaxSize()
@@ -200,7 +206,8 @@ internal fun ChatFieldScreenViewComponent(
                     .background(color = Color.White),
                     text = chatHistory.get(selectedIndex),
                     style = chatReplyTextStyle.value,
-                    softWrap = true, maxLines = 3)
+                    softWrap = true,
+                )
                 Spacer(modifier = Modifier.height(8.dp))
             }
 

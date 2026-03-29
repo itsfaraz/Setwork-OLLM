@@ -67,6 +67,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        setworkChat.clean()
+    }
+
     override fun onStop() {
         super.onStop()
         setworkChat.clean()

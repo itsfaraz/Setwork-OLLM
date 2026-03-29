@@ -7,9 +7,12 @@ plugins {
 android {
     namespace = "com.designlife.justdo.setworkllm"
     compileSdk = 36
+    buildToolsVersion = "35.0.0"
+
 
     defaultConfig {
         minSdk = 24
+        targetSdk = 34
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -65,6 +68,8 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.json:json:20230227")
+    implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 //    debugImplementation("com.github.chuckerteam.chucker:library:4.0.0")
 }
