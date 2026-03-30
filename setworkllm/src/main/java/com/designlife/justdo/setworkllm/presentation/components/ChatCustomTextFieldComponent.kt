@@ -107,7 +107,7 @@ internal fun ChatTextField(
             onChatTextEvent(it)
         },
         singleLine = false,
-        cursorBrush = SolidColor(Color.DarkGray),
+        cursorBrush = SolidColor(ComponentColorPrimary),
         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done)
     ){ innerTextField ->
         Row(
@@ -137,7 +137,8 @@ internal fun ChatTextField(
                 if (chatText.isEmpty()){
                     Text(modifier = Modifier.padding(2.dp).fillMaxWidth(), text = if(isThinking) thinkText else "Ask anything ...", style = chatTextPlaceholderStyle.value, textAlign = TextAlign.Start)
                 }else{
-                    Text(modifier = Modifier.padding(2.dp).fillMaxWidth(), text = chatText, style = chatTextStyle.value, textAlign = TextAlign.Start)
+//                    Text(modifier = Modifier.padding(2.dp).fillMaxWidth(), text = chatText, style = chatTextStyle.value, textAlign = TextAlign.Start)
+                    innerTextField()
                 }
                 Spacer(modifier = Modifier.height(6.dp))
             }
@@ -150,6 +151,7 @@ internal fun ChatTextField(
             ) {
                 if (isThinking){
                     IconButton(onClick = {
+//                        focusManager?.clearFocus()
                         hideKeyboard(context,view)
                         onChatStopEvent()
 
