@@ -2,6 +2,11 @@
 buildscript {
     repositories {
         google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:${libs.versions.agp}")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin}")
     }
 }
 plugins {

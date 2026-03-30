@@ -25,7 +25,7 @@ build/
 *.apk
 
 # Local properties
-gradle.properties
+#gradle.properties
 
 # Keystore (sensitive!)
 *.jks

@@ -1,5 +1,0 @@
-jdk:
-  - openjdk17
-
-install:
-  - ./gradlew :setworkllm:clean :setworkllm:build :setworkllm:publishToMavenLocal
