@@ -26,7 +26,6 @@ fun observeInternet(
 
         override fun onLost(network: Network) {
             super.onLost(network)
-            clearNetwork()
             onAvailable(false)
         }
 

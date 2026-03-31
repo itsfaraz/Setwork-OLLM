@@ -26,10 +26,8 @@ internal class OChatRepository(
 
     suspend fun onChatStream(request: ChatSessionRequest): Flow<String> = flow {
         streamState = true
-
-    Log.i("Session_Flow", "OChatRepository: onChatStream api init ")
-
-    return@flow try {
+        Log.i("Session_Flow", "OChatRepository: onChatStream api init ")
+        return@flow try {
             if (!streamState) return@flow
             Log.i("Session_Flow", "OChatRepository: onChatStream api request ")
             val response = chatService.requestChatSession(request)
@@ -83,24 +81,21 @@ internal class OChatRepository(
         try {
             Log.i("EXIT_FLOW", "onChatExit: init")
             streamState = false
-            withTimeout(3000L){
-                Log.i("EXIT_FLOW", "onChatExit: requestChatSessionKill")
-                val response = chatService.requestChatSessionKill(ChatSessionEndRequest(requestId = requestId))
-                response?.let {
-                    if (it.isSuccessful) {
-                        it.body()?.let {
-                            Log.i("EXIT_FLOW", "onChatExit: response :: success")
-                            clearNetwork()
-                            Log.i("EXIT_FLOW", "onChatExit: response :: clearNetwork")
-                            currentCoroutineContext().cancel()
-                            Log.i("EXIT_FLOW", "onChatExit: response :: cancel network")
-                        }
+            Log.i("EXIT_FLOW", "onChatExit: requestChatSessionKill")
+            val response = chatService.requestChatSessionKill(ChatSessionEndRequest(requestId = requestId))
+            response?.let {
+                if (it.isSuccessful) {
+                    it.body()?.let {
+                        Log.i("EXIT_FLOW", "onChatExit: response :: success")
+                        clearNetwork()
+                        Log.i("EXIT_FLOW", "onChatExit: response :: clearNetwork")
+                        Log.i("EXIT_FLOW", "onChatExit: response :: cancel network")
                     }
                 }
             }
-
         } catch (e : TimeoutCancellationException){
-            clearNetwork()
+            Log.i("EXIT_FLOW", "onChatExit: TimeoutCancellationException : ${e.message}")
+
         } catch (e: Exception) {
             e.printStackTrace()
         }

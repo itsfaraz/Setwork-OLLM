@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 internal class OChatViewModel(
     @SuppressLint("StaticFieldLeak") private val context: Context
@@ -114,7 +115,6 @@ internal class OChatViewModel(
                                     _chatReplyText.value += "$token "
                                 }else{
                                     OChatRepository.streamState = false
-                                    currentCoroutineContext().cancel()
                                     return@collect
                                 }
                             }
@@ -132,9 +132,6 @@ internal class OChatViewModel(
 
     private fun onChatSessionKill(){
         try {
-            if (::_chatRepository.isInitialized){
-                _chatRepository.forceStopStream()
-            }
             if (_chatReplyText.value.isNotEmpty()) {
                 _chatHistory.add(_chatReplyText.value)
                 _isStreaming.value = false
@@ -157,7 +154,6 @@ internal class OChatViewModel(
                     _chatId.value = 0
                     viewModelScope.cancel()
                 }
-
             }
         }catch (e : Exception){
             e.printStackTrace()
@@ -168,12 +164,12 @@ internal class OChatViewModel(
     }
 
     fun onClear(){
-        onChatSessionKill()
         _isStreaming.value = false
         _chatText.value = ""
         _chatReplyText.value = ""
         _completeChatReply.value = ""
         _chatHistory.clear()
+        viewModelScope.cancel()
     }
 
 }
