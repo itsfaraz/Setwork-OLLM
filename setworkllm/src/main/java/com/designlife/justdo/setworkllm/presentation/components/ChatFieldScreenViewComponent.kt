@@ -1,5 +1,7 @@
 package com.designlife.justdo.setworkllm.presentation.components
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,34 +30,53 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.designlife.justdo.setworkllm.R
 import com.designlife.justdo.setworkllm.ui.theme.ChatBackgroundColorLight
 import com.designlife.justdo.setworkllm.ui.theme.ComponentColorPrimary
+import com.designlife.justdo.setworkllm.ui.theme.NoInternetStyleFontSize
 import com.designlife.justdo.setworkllm.ui.theme.chatReplyTextStyle
 import com.designlife.justdo.setworkllm.ui.theme.chatViewDescriptionStyle
 import com.designlife.justdo.setworkllm.ui.theme.chatViewHeaderStyle
+import com.designlife.justdo.setworkllm.ui.theme.fontFamily
+import com.designlife.justdo.setworkllm.ui.theme.noInternetTextStyleOne
+import com.designlife.justdo.setworkllm.ui.theme.noInternetTextStyleTwo
 
 @Composable
 internal fun ChatFieldScreenViewComponent(
     color : Color = Color.White,
+    isInternetAvailable : State<Boolean>,
     isThinking : Boolean,
     chatText : String,
     chatReplyText : String,
     chatHistory : List<String>,
     onChatTextEvent : (text : String) -> Unit,
     onChatStartEvent : () -> Unit,
-    onChatStopEvent : () -> Unit
+    onChatStopEvent : () -> Unit,
+    onBackPressEvent : () -> Unit
 ) {
+    val activity = LocalContext.current as Activity
+
+    BackHandler(enabled = false) {
+        onBackPressEvent()
+        println("Back pressed!")
+    }
 
     val scrollState = rememberScrollState()
     val lazyListState = rememberLazyListState()
@@ -107,8 +128,8 @@ internal fun ChatFieldScreenViewComponent(
                                 .fillMaxWidth()
                                 .wrapContentHeight()
                                 .padding(horizontal = 12.dp, vertical = 2.dp)
-                                .background(color = ChatBackgroundColorLight, shape = RoundedCornerShape(12.dp)),
-                                verticalAlignment = Alignment.CenterVertically,
+                                .background(color = ChatBackgroundColorLight, shape = RoundedCornerShape(14.dp)),
+                                verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
 
@@ -135,12 +156,11 @@ internal fun ChatFieldScreenViewComponent(
                                     layoutToggle = true
                                 }) {
                                     Box(
-                                        modifier = Modifier.size(24.dp)
-                                            .background(color = ChatBackgroundColorLight, shape = CircleShape)
-                                            .border(width = 1.dp, color = ComponentColorPrimary, shape = CircleShape),
+                                        modifier = Modifier.size(26.dp)
+                                            .background(color = ComponentColorPrimary, shape = CircleShape),
                                         contentAlignment = Alignment.Center
                                     ){
-                                        Icon(modifier = Modifier.size(10.dp), painter = painterResource(R.drawable.ic_open_out), contentDescription = "Open Out", tint = ComponentColorPrimary)
+                                        Icon(modifier = Modifier.size(12.dp), painter = painterResource(R.drawable.ic_open_out), contentDescription = "Open Out", tint = Color.White)
                                     }
                                 }
 
@@ -173,6 +193,7 @@ internal fun ChatFieldScreenViewComponent(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 ChatTextField(
+                    networkState = isInternetAvailable.value,
                     isThinking = isThinking,
                     chatText = chatText,
                     onChatTextEvent = {
@@ -192,6 +213,12 @@ internal fun ChatFieldScreenViewComponent(
 
 
     AnimatedVisibility(layoutToggle) {
+
+        BackHandler {
+            layoutToggle = false
+            println("Back pressed for layout")
+        }
+
         val fullViewScrollState = rememberScrollState()
 
         Box(
@@ -204,7 +231,7 @@ internal fun ChatFieldScreenViewComponent(
                     .fillMaxSize()
                     .padding(horizontal = 2.dp, vertical = 6.dp)
                     .background(color = Color.White),
-                    text = chatHistory.get(selectedIndex),
+                    text = if (chatHistory.isEmpty()) "" else chatHistory.get(selectedIndex),
                     style = chatReplyTextStyle.value,
                     softWrap = true,
                 )
@@ -217,14 +244,33 @@ internal fun ChatFieldScreenViewComponent(
             }) {
                 Box(
                     modifier = Modifier.size(34.dp)
-                        .background(color = ChatBackgroundColorLight, shape = CircleShape)
-                        .border(width = 1.dp, color = ComponentColorPrimary, shape = CircleShape),
+                        .background(color = ComponentColorPrimary, shape = CircleShape),
                     contentAlignment = Alignment.Center
                 ){
-                    Icon(modifier = Modifier.size(16.dp), painter = painterResource(R.drawable.ic_minimize), contentDescription = "Minimize Screen", tint = ComponentColorPrimary)
+                    Icon(modifier = Modifier.size(16.dp), painter = painterResource(R.drawable.ic_minimize), contentDescription = "Minimize Screen", tint = Color.White)
                 }
             }
         }
     }
 
+//    if (isInternetAvailable.value){
+//
+//    }
+
+//    else{
+//        Box(
+//            modifier = Modifier.fillMaxSize(),
+//            contentAlignment = Alignment.Center
+//        ) {
+//            Text(buildAnnotatedString {
+//                withStyle(style = SpanStyle(color = ComponentColorPrimary, fontFamily = fontFamily, fontSize = NoInternetStyleFontSize.value, fontWeight = FontWeight.SemiBold)){
+//                    append("Internet")
+//                }
+//                append(" ")
+//                withStyle(style = SpanStyle(color = Color.Black, fontFamily = fontFamily, fontSize = NoInternetStyleFontSize.value, fontWeight = FontWeight.Normal)){
+//                    append("Is Not Available")
+//                }
+//            }, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+//        }
+//    }
 }

@@ -1,55 +1,65 @@
 package com.designlife.justdo.setworkllm.domain.repository
 
 import android.util.Log
+import com.designlife.justdo.setworkllm.data.network.NetworkBuilder.clearNetwork
 import com.designlife.justdo.setworkllm.data.network.request.ChatSessionEndRequest
 import com.designlife.justdo.setworkllm.data.network.request.ChatSessionRequest
 import com.designlife.justdo.setworkllm.data.network_service.OLLMService
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withTimeout
+import okhttp3.ResponseBody
 import org.json.JSONObject
+import java.io.BufferedReader
+import kotlin.concurrent.Volatile
 
 internal class OChatRepository(
     private val chatService: OLLMService
 ) {
-//    var infiRun : Boolean = false
-//    var lineNO : Int = 1
+
+    private var activeReader: BufferedReader? = null
+    private var activeBody: ResponseBody? = null
+
     suspend fun onChatStream(request: ChatSessionRequest): Flow<String> = flow {
-//        @Testing
-//        infiRun = true
-//        while (infiRun){
-//            delay(100)
-//            emit("HELLO WORLD ---------------- ${lineNO}")
-//            lineNO +=1
-//        }
+        streamState = true
 
+    Log.i("Session_Flow", "OChatRepository: onChatStream api init ")
 
-//        @Prod
-        return@flow try {
+    return@flow try {
+            if (!streamState) return@flow
+            Log.i("Session_Flow", "OChatRepository: onChatStream api request ")
             val response = chatService.requestChatSession(request)
             if (!response.isSuccessful) return@flow
+
+            Log.i("Session_Flow", "OChatRepository: onChatStream api request successfull ")
 
             val reader = response.body()
                 ?.byteStream()
                 ?.bufferedReader() ?: return@flow
+            activeBody = response.body()
+            activeReader = reader
 
-            while (true) {
+            while (currentCoroutineContext().isActive && streamState) {
                 val line = reader.readLine() ?: break
-
+                Log.i("Session_Flow", "OChatRepository: onChatStream data : ${line} ")
+                if (!streamState) {
+                   break
+                }
                 if (line.startsWith("data:")) {
                     // Strip ALL "data:" prefixes (handles single and double)
                     var json = line
                     while (json.startsWith("data:")) {
                         json = json.removePrefix("data:").trim()
                     }
-
                     if (json.isNotEmpty() && json != "[DONE]") {
                         try {
                             val obj = JSONObject(json)
-
                             // Stop signal from llama.cpp
                             if (obj.optBoolean("stop", false)) break
-
                             val content = obj.optString("content")
                             if (content.isNotEmpty()) {
                                 emit(content)
@@ -62,26 +72,52 @@ internal class OChatRepository(
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        } finally {
+            activeReader?.close()
+            activeReader = null
+            activeBody?.close()
         }
     }
 
     suspend fun onChatExit(requestId : String) {
         try {
-//            @Testing
-//            infiRun = false
-//            lineNO = 1
-
-            // @Prod
-            val response = chatService.requestChatSessionKill(ChatSessionEndRequest(requestId = requestId))
-            response?.let {
-                if (it.isSuccessful) {
-                    it.body()?.let {
-                        Log.i("CHAT_REPOSITORY", "onChatExit: ${it.message}")
+            Log.i("EXIT_FLOW", "onChatExit: init")
+            streamState = false
+            withTimeout(3000L){
+                Log.i("EXIT_FLOW", "onChatExit: requestChatSessionKill")
+                val response = chatService.requestChatSessionKill(ChatSessionEndRequest(requestId = requestId))
+                response?.let {
+                    if (it.isSuccessful) {
+                        it.body()?.let {
+                            Log.i("EXIT_FLOW", "onChatExit: response :: success")
+                            clearNetwork()
+                            Log.i("EXIT_FLOW", "onChatExit: response :: clearNetwork")
+                            currentCoroutineContext().cancel()
+                            Log.i("EXIT_FLOW", "onChatExit: response :: cancel network")
+                        }
                     }
                 }
             }
+
+        } catch (e : TimeoutCancellationException){
+            clearNetwork()
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    fun forceStopStream() {
+        streamState = false
+        try {
+            activeReader?.close()
+            activeReader = null
+            activeBody?.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    companion object{
+        @Volatile internal var streamState : Boolean = false
     }
 }

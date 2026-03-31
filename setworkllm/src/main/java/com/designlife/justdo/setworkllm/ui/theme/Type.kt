@@ -50,9 +50,10 @@ val fontFamily = FontFamily(
     Font(R.font.inter_thin, weight = FontWeight.Thin)
 )
 
-val headerStyleFontSize = mutableStateOf<TextUnit>(18.sp)
-val headerDescriptionStyleFontSize = mutableStateOf<TextUnit>(17.sp)
+val headerStyleFontSize = mutableStateOf<TextUnit>(23.sp)
+val headerDescriptionStyleFontSize = mutableStateOf<TextUnit>(18.sp)
 val ChatStyleFontSize = mutableStateOf<TextUnit>(16.sp)
+val NoInternetStyleFontSize = mutableStateOf<TextUnit>(24.sp)
 
 val chatViewHeaderStyle = mutableStateOf(TextStyle(
     color = Color.Black,
@@ -86,6 +87,23 @@ val chatReplyTextStyle = mutableStateOf(TextStyle(
     color = ChatReplyTextColorLight,
     fontFamily = fontFamily,
     fontSize = ChatStyleFontSize.value,
+    fontWeight = FontWeight.Normal,
+    lineHeight = 26.sp
+))
+
+
+val noInternetTextStyleOne = mutableStateOf(TextStyle(
+    color = Color.Black,
+    fontFamily = fontFamily,
+    fontSize = NoInternetStyleFontSize.value,
+    fontWeight = FontWeight.Normal,
+    lineHeight = 26.sp
+))
+
+val noInternetTextStyleTwo = mutableStateOf(TextStyle(
+    color = ComponentColorPrimary,
+    fontFamily = fontFamily,
+    fontSize = NoInternetStyleFontSize.value,
     fontWeight = FontWeight.Normal,
     lineHeight = 26.sp
 ))

@@ -59,6 +59,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 internal fun ChatTextField(
+    networkState : Boolean,
     isThinking : Boolean,
     chatText : String,
     onChatTextEvent : (text: String) -> Unit,
@@ -122,7 +123,11 @@ internal fun ChatTextField(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Spacer(modifier = Modifier.width(8.dp))
-                Box(modifier = Modifier.size(5.dp).background(color = animatedThinkingColor, shape = CircleShape))
+                if (networkState){
+                    Box(modifier = Modifier.size(5.dp).background(color = animatedThinkingColor, shape = CircleShape))
+                }else{
+                    Box(modifier = Modifier.size(5.dp).background(color = Color.Red, shape = CircleShape))
+                }
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
@@ -134,12 +139,17 @@ internal fun ChatTextField(
                 verticalArrangement = Arrangement.Center
             ) {
                 Spacer(modifier = Modifier.height(6.dp))
-                if (chatText.isEmpty()){
-                    Text(modifier = Modifier.padding(2.dp).fillMaxWidth(), text = if(isThinking) thinkText else "Ask anything ...", style = chatTextPlaceholderStyle.value, textAlign = TextAlign.Start)
-                }else{
+                if (networkState){
+                    if (chatText.isEmpty()){
+                        Text(modifier = Modifier.padding(2.dp).fillMaxWidth(), text = if(isThinking) thinkText else "Ask anything ...", style = chatTextPlaceholderStyle.value, textAlign = TextAlign.Start)
+                    }else{
 //                    Text(modifier = Modifier.padding(2.dp).fillMaxWidth(), text = chatText, style = chatTextStyle.value, textAlign = TextAlign.Start)
-                    innerTextField()
+                        innerTextField()
+                    }
+                }else{
+                    Text(modifier = Modifier.padding(2.dp).fillMaxWidth(), text = "Internet Is Not Available :/", style = chatTextPlaceholderStyle.value, textAlign = TextAlign.Start)
                 }
+
                 Spacer(modifier = Modifier.height(6.dp))
             }
             Row(

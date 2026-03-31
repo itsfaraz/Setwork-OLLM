@@ -9,16 +9,23 @@ import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.concurrent.TimeUnit
 
 internal object NetworkBuilder {
+
+    lateinit var okHttpClient: OkHttpClient
+
     fun instance(
         context: Context,
-        baseURL : String,
-    ) : Retrofit {
-        val interceptor = HttpLoggingInterceptor()
-        interceptor.level = HttpLoggingInterceptor.Level.NONE
-        val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(0, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+        baseURL: String,
+    ): Retrofit {
+
+        val interceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BASIC
+        }
+
+        okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS) // ✅ IMPORTANT: not infinite
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true) // ✅ auto retry
             .addInterceptor(interceptor)
             .build()
 
@@ -26,7 +33,17 @@ internal object NetworkBuilder {
             .baseUrl(baseURL)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
-            .client(client)
+            .client(okHttpClient)
             .build()
+    }
+
+    fun clearNetwork() {
+        if (::okHttpClient.isInitialized){
+            // Cancel all ongoing API calls
+            NetworkBuilder.okHttpClient.dispatcher.cancelAll()
+
+            // Kill all dead connections
+            NetworkBuilder.okHttpClient.connectionPool.evictAll()
+        }
     }
 }

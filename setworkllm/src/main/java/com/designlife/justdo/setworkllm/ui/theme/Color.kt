@@ -13,7 +13,7 @@ val Yellow40 = Color(0xFFFFEB3B)
 val Magenta10 = Color(0xFFC40042)
 
 val ChatTextColorLight = Color(0xFFABA8A8)
-val ChatBackgroundColorLight = Color(0xFFE7FFCF)
+val ChatBackgroundColorLight = Color(0xFFEFEEEE)
 val ChatBackgroundColorActiveLight = Color(0xFFE7E9F6)
 val ChatReplyTextColorLight = Color(0xFF1E1E1E)
 val ComponentColorPrimary = Color(0xFF5779F4)

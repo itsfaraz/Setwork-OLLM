@@ -1,5 +1,6 @@
 package com.designlife.justdo.setworkllm.common.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
@@ -13,16 +14,14 @@ import com.designlife.justdo.setworkllm.presentation.viewmodel.OChatViewModel
 import com.designlife.justdo.setworkllm.presentation.viewmodel.OChatViewModelFactory
 
 internal object PackageServiceLocator {
+    @SuppressLint("StaticFieldLeak")
     private var chatViewModel : OChatViewModel? = null
     private var chatRepository : OChatRepository? = null
     private var githubRepository: GithubRepository? = null
 
 
-
     fun provideChatRepository(context: Context) : OChatRepository {
-        return chatRepository?.let { it } ?: synchronized(context){
-            chatRepository?.let { it } ?: createChatRepository(context)
-        }
+        return createChatRepository(context)
     }
 
     internal fun createChatRepository(context: Context) : OChatRepository{
@@ -46,17 +45,15 @@ internal object PackageServiceLocator {
     }
 
 
-
-
-    fun provideOChatViewModel(context: Context,chatRepository: OChatRepository) : OChatViewModel {
+    fun provideOChatViewModel(context: Context) : OChatViewModel {
         return chatViewModel?.let { it } ?: synchronized(context){
-            chatViewModel?.let { it } ?: createOChatViewModel(context,chatRepository)
+            chatViewModel?.let { it } ?: createOChatViewModel(context)
         }
     }
 
-    internal fun createOChatViewModel(context: Context, chatRepository: OChatRepository) : OChatViewModel{
-        val chatFactory = OChatViewModelFactory(chatRepository)
-        chatViewModel = ViewModelProvider(context as ViewModelStoreOwner,chatFactory)[OChatViewModel::class.java]
+    internal fun createOChatViewModel(context: Context) : OChatViewModel{
+        val factor = OChatViewModelFactory(context)
+        chatViewModel = ViewModelProvider(context as ViewModelStoreOwner,factor)[OChatViewModel::class.java]
         return chatViewModel!!
     }
 
