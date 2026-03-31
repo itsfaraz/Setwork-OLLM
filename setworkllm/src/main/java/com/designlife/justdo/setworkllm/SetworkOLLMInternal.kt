@@ -18,6 +18,7 @@ import com.designlife.justdo.setworkllm.presentation.viewmodel.OChatViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -49,27 +50,12 @@ internal class SetworkOLLMInternal(
                             PackageServiceLocator.provideGithubRepository(context).fetchBaseUrl()
                             initStates()
                         }
-                    }else{
-                        noInternet()
                     }
                 }
             }
         }catch (e : Exception){
             e.printStackTrace()
             Toast.makeText(context, "Network Error", Toast.LENGTH_SHORT).show()
-            Log.i("SetworkOLLM", "init: ${e.message}")
-        }
-    }
-
-    private fun exit() {
-        if (::chatViewModel.isInitialized){
-            chatViewModel.onEvent(OChatUseCase.OnChatStopEvent)
-        }
-    }
-
-    private fun noInternet(){
-        if (::chatViewModel.isInitialized){
-            chatViewModel.onEvent(OChatUseCase.OnChatStopEvent)
         }
     }
 
@@ -83,9 +69,11 @@ internal class SetworkOLLMInternal(
             }
             chatResult.value = ""
             PackageServiceLocator.clean()
+            if (::scope.isInitialized){
+                scope.coroutineContext.cancel()
+            }
         }catch (e : Exception){
             e.printStackTrace()
-            Log.i("SetworkOLLM", "clean: ${e.message}")
         }
     }
 
@@ -95,7 +83,7 @@ internal class SetworkOLLMInternal(
                 chatViewModel.initChatRepository(context)
             }
         }catch (e : Exception){
-            Log.i("SetworkOLLM", "initStates: ${e.message}")
+            e.printStackTrace()
         }
 
     }
@@ -107,11 +95,8 @@ internal class SetworkOLLMInternal(
         }else{
             if (chatViewModel.isInternetAvailable.collectAsState().value){
                 initStates()
-            }else{
-                noInternet()
             }
         }
-        Log.i("SetworkOLLM", "SetworkOLLMInternal :: ChatTextView: init")
         ChatFieldViewComponent(
             isInternetAvailable = chatViewModel.isInternetAvailable.collectAsState(),
             isThinking = chatViewModel.isStreaming.value,
@@ -127,7 +112,6 @@ internal class SetworkOLLMInternal(
                 chatViewModel.onEvent(OChatUseCase.OnChatAddEvent)
             },
             onBackPressEvent = {
-                exit()
             }
         )
     }
@@ -139,11 +123,8 @@ internal class SetworkOLLMInternal(
         }else{
             if (chatViewModel.isInternetAvailable.collectAsState().value){
                 initStates()
-            }else{
-                noInternet()
             }
         }
-        Log.i("SetworkOLLM", "SetworkOLLMInternal :: ChatScreenView: init")
         ChatFieldScreenViewComponent(
             isInternetAvailable = chatViewModel.isInternetAvailable.collectAsState(),
             isThinking = chatViewModel.isStreaming.value,
@@ -156,7 +137,6 @@ internal class SetworkOLLMInternal(
                 chatViewModel.onEvent(OChatUseCase.OnChatStopEvent)
             },
             onBackPressEvent = {
-                exit()
             }
         )
     }

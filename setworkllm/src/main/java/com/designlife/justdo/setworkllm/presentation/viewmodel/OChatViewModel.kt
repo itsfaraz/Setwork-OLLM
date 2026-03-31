@@ -57,7 +57,6 @@ internal class OChatViewModel(
 
     init {
         observeInternet(context){ isAvailable ->
-            println("🔥 CALLBACK HIT: $isAvailable")
             viewModelScope.launch(Dispatchers.Main.immediate) {
                 _isInternetAvailable.value = isAvailable
             }
@@ -82,15 +81,12 @@ internal class OChatViewModel(
     }
 
     private fun onChatSessionStart() {
-        Log.i("Session_Flow", "onChatSessionStart: ")
-        viewModelScope.launch {
+        _chatId.value = System.currentTimeMillis() + _chatText.value.hashCode()
+        viewModelScope.launch(Dispatchers.IO) {
             _chatReplyText.value = ""
-            Log.i("Session_Flow", "onChatSessionStart: in viewmodel scope ")
             if (_chatText.value.isEmpty()) return@launch
 
             _isStreaming.value = true
-            _chatId.value = System.currentTimeMillis() + _chatText.value.hashCode()
-            Log.i("Session_Flow", "onChatSessionStart: in chat Id : ${_chatId.value} ")
 
             val request = ChatSessionRequest(
                 prompt = _chatText.value,
@@ -98,19 +94,14 @@ internal class OChatViewModel(
                 nPredict = "2048",
                 chatId = _chatId.value.toString()
             )
-            Log.i("Session_Flow", "onChatSessionStart: in chat Id : ${_chatText.value} ")
             _chatText.value = ""
-
 
             try {
                 if (::_chatRepository.isInitialized){
-                    Log.i("Session_Flow", "onChatSessionStart: in chat Id : ${isInternetAvailable.value} ")
                     if (isInternetAvailable.value){
-                        Log.i("Session_Flow", "onChatSessionStart: Before api call on ${AppURLRouter.SETWORK_BASE_URL}")
                        _chatRepository.onChatStream(request)
                             .flowOn(Dispatchers.IO)
                             .collect { token ->
-                                Log.i("Session_Flow", "onChatSessionStart: onChatStream collect :: ${token}")
                                 if (_isStreaming.value){
                                     _chatReplyText.value += "$token "
                                 }else{
@@ -134,25 +125,13 @@ internal class OChatViewModel(
         try {
             if (_chatReplyText.value.isNotEmpty()) {
                 _chatHistory.add(_chatReplyText.value)
-                _isStreaming.value = false
                 _chatReplyText.value = ""
-                Log.i("EXIT_FLOW", "onChatSessionKill: ${_chatHistory.get(_chatHistory.lastIndex).toString()}")
             }
             if (_chatId.value == 0L) return
-            viewModelScope.launch {
-                try {
-                    Log.i("EXIT_FLOW", "onChatSessionKill: chat repository :: isInitialized ${::_chatRepository.isInitialized}")
-                    if (::_chatRepository.isInitialized){
-                        if (isInternetAvailable.value){
-                            Log.i("EXIT_FLOW", "onChatSessionKill: onChatExit")
-                            _chatRepository.onChatExit(requestId = _chatId.value.toString())
-                        }
-                    }
-                }catch (e : Exception){
-                    e.printStackTrace()
-                }finally {
-                    _chatId.value = 0
-                    viewModelScope.cancel()
+            viewModelScope.launch(Dispatchers.IO) {
+                if (isInternetAvailable.value){
+                    _isStreaming.value = false
+                    _chatRepository.onChatExit(requestId = _chatId.value.toString())
                 }
             }
         }catch (e : Exception){
@@ -168,6 +147,7 @@ internal class OChatViewModel(
         _chatText.value = ""
         _chatReplyText.value = ""
         _completeChatReply.value = ""
+        _chatId.value = 0L
         _chatHistory.clear()
         viewModelScope.cancel()
     }
