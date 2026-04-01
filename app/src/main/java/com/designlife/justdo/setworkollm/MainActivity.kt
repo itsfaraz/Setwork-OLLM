@@ -1,6 +1,7 @@
 package com.designlife.justdo.setworkollm
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,11 +26,12 @@ import com.designlife.justdo.setworkllm.SetworkOLLM
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), SetworkOLLM.SetworkMessage {
     private lateinit var setworkChat : SetworkOLLM
     override fun onCreate(savedInstanceState: Bundle?) {
         setworkChat = SetworkOLLM.chatSDK(this)
         setworkChat.init()
+        setworkChat.protocol(this)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -80,5 +82,9 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         setworkChat.clean()
+    }
+
+    override fun onChatRelay(message: String) {
+        Log.i("FLOW", "onChatRelay: ${message}")
     }
 }

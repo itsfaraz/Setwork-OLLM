@@ -96,7 +96,7 @@ internal class OChatViewModel(
                             .flowOn(Dispatchers.IO)
                             .collect { token ->
                                 if (_isStreaming.value){
-                                    _chatReplyText.value += "$token "
+                                    _chatReplyText.value += token
                                 }else{
                                     OChatRepository.streamState = false
                                     return@collect
@@ -109,16 +109,15 @@ internal class OChatViewModel(
             } finally {
                 _isStreaming.value = false
                 _completeChatReply.value = _chatReplyText.value
-                _chatReplyText.value = ""
+                if (_completeChatReply.value.isNotEmpty()) {
+                    _chatHistory.add(_completeChatReply.value)
+                }
             }
         }
     }
 
     private fun onChatSessionKill(){
         try {
-            if (_completeChatReply.value.isNotEmpty()) {
-                _chatHistory.add(_completeChatReply.value)
-            }
             if (_chatId.value == 0L) return
             viewModelScope.launch(Dispatchers.IO) {
                 if (isInternetAvailable.value){
@@ -128,8 +127,6 @@ internal class OChatViewModel(
             }
         }catch (e : Exception){
             e.printStackTrace()
-        }finally {
-            _chatReplyText.value = ""
         }
     }
 

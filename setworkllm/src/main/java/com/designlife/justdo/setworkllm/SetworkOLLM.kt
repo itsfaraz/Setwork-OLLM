@@ -2,12 +2,11 @@ package com.designlife.justdo.setworkllm
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import com.designlife.justdo.setworkllm.domain.repository.OChatRepository
 
 public interface SetworkOLLM{
-    var chatResult : MutableState<String>
     public fun init()
+    public fun protocol(setworkMessage: SetworkMessage)
 
     public fun clean(){
         try {
@@ -19,6 +18,10 @@ public interface SetworkOLLM{
 
     public @Composable fun ChatTextView()
     public @Composable fun ChatScreenView()
+
+    interface SetworkMessage {
+        fun onChatRelay(message : String)
+    }
     companion object{
         @Volatile internal var instance : SetworkOLLM? = null
 

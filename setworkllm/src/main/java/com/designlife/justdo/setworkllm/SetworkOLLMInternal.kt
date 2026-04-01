@@ -1,5 +1,6 @@
 package com.designlife.justdo.setworkllm
 
+import android.app.Activity
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -21,16 +22,16 @@ import kotlinx.coroutines.launch
 internal class SetworkOLLMInternal(
     private val context: Context
 ) : SetworkOLLM {
-
+    private var setworkMessage : SetworkOLLM.SetworkMessage? = null
     @Volatile private var isInitialized : Boolean = false
     @Volatile private lateinit var chatViewModel: OChatViewModel
     private lateinit var scope : CoroutineScope
     private lateinit var internetHelper: InternetHelper
-    override var chatResult: MutableState<String> = mutableStateOf("")
 
     override fun init() {
         scope = CoroutineScope(Dispatchers.IO + Job())
         internetHelper = PackageServiceLocator.provideInternetHelper(context)
+        this.setworkMessage
         try {
             if (!isInitialized){
                 chatViewModel = PackageServiceLocator.provideOChatViewModel(context,internetHelper)
@@ -57,6 +58,9 @@ internal class SetworkOLLMInternal(
         }
     }
 
+    override fun protocol(setworkMessage: SetworkOLLM.SetworkMessage) {
+        this.setworkMessage = setworkMessage
+    }
 
     override fun clean() {
         super.clean()
@@ -65,7 +69,6 @@ internal class SetworkOLLMInternal(
             if (::chatViewModel.isInitialized){
                 chatViewModel.onClear()
             }
-            chatResult.value = ""
             PackageServiceLocator.clean()
             if (::scope.isInitialized){
                 scope.coroutineContext.cancel()
@@ -106,7 +109,7 @@ internal class SetworkOLLMInternal(
                 chatViewModel.onEvent(OChatUseCase.OnChatStopEvent)
             },
             onChatAddEvent = {
-                chatResult.value = chatViewModel.completeChatReply.value
+                setworkMessage?.onChatRelay(chatViewModel.completeChatReply.value)
                 chatViewModel.onEvent(OChatUseCase.OnChatAddEvent)
             },
             onBackPressEvent = {
