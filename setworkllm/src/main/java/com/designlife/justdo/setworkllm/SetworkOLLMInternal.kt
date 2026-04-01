@@ -1,16 +1,13 @@
 package com.designlife.justdo.setworkllm
 
 import android.content.Context
-import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import com.designlife.justdo.setworkllm.common.utils.InternetHelper
 import com.designlife.justdo.setworkllm.common.utils.PackageServiceLocator
-import com.designlife.justdo.setworkllm.common.utils.observeInternet
 import com.designlife.justdo.setworkllm.domain.usecase.OChatUseCase
 import com.designlife.justdo.setworkllm.presentation.components.ChatFieldScreenViewComponent
 import com.designlife.justdo.setworkllm.presentation.components.ChatFieldViewComponent
@@ -19,7 +16,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 internal class SetworkOLLMInternal(
@@ -29,22 +25,24 @@ internal class SetworkOLLMInternal(
     @Volatile private var isInitialized : Boolean = false
     @Volatile private lateinit var chatViewModel: OChatViewModel
     private lateinit var scope : CoroutineScope
+    private lateinit var internetHelper: InternetHelper
     override var chatResult: MutableState<String> = mutableStateOf("")
 
     override fun init() {
         scope = CoroutineScope(Dispatchers.IO + Job())
+        internetHelper = PackageServiceLocator.provideInternetHelper(context)
         try {
             if (!isInitialized){
-                chatViewModel = PackageServiceLocator.provideOChatViewModel(context)
+                chatViewModel = PackageServiceLocator.provideOChatViewModel(context,internetHelper)
                 isInitialized = true
             }
-            if (InternetHelper.isInternetAvailable(context)){
+            if (internetHelper.isInternetAvailable()){
                 scope.launch {
                     PackageServiceLocator.provideGithubRepository(context).fetchBaseUrl()
                 }
                 chatViewModel.initChatRepository(context)
             }else{
-                observeInternet(context){ isAvailable ->
+                internetHelper.observeInternet{ isAvailable ->
                     if (isAvailable){
                         scope.launch {
                             PackageServiceLocator.provideGithubRepository(context).fetchBaseUrl()
@@ -90,7 +88,7 @@ internal class SetworkOLLMInternal(
 
     @Composable
     override fun ChatTextView() {
-        if (InternetHelper.isInternetAvailable(context)){
+        if (internetHelper.isInternetAvailable()){
             initStates()
         }else{
             if (chatViewModel.isInternetAvailable.collectAsState().value){
@@ -100,7 +98,7 @@ internal class SetworkOLLMInternal(
         ChatFieldViewComponent(
             isInternetAvailable = chatViewModel.isInternetAvailable.collectAsState(),
             isThinking = chatViewModel.isStreaming.value,
-            chatText = chatViewModel.chatText.value,
+            chatText = chatViewModel.chatPrompt.value,
             chatReplyText = chatViewModel.chatReplyText.value,
             onChatTextEvent = {chatViewModel.onEvent(OChatUseCase.OnChatEvent(it))},
             onChatStartEvent = {chatViewModel.onEvent(OChatUseCase.OnChatStartEvent)},
@@ -118,7 +116,7 @@ internal class SetworkOLLMInternal(
 
     @Composable
     override fun ChatScreenView() {
-        if (InternetHelper.isInternetAvailable(context)){
+        if (internetHelper.isInternetAvailable()){
             initStates()
         }else{
             if (chatViewModel.isInternetAvailable.collectAsState().value){
@@ -128,7 +126,7 @@ internal class SetworkOLLMInternal(
         ChatFieldScreenViewComponent(
             isInternetAvailable = chatViewModel.isInternetAvailable.collectAsState(),
             isThinking = chatViewModel.isStreaming.value,
-            chatText = chatViewModel.chatText.value,
+            chatText = chatViewModel.chatPrompt.value,
             chatReplyText = chatViewModel.chatReplyText.value,
             chatHistory = chatViewModel.chatHistory,
             onChatTextEvent = {chatViewModel.onEvent(OChatUseCase.OnChatEvent(it))},

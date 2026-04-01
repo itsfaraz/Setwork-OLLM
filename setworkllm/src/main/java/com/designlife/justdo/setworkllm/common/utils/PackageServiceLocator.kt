@@ -14,11 +14,22 @@ import com.designlife.justdo.setworkllm.presentation.viewmodel.OChatViewModel
 import com.designlife.justdo.setworkllm.presentation.viewmodel.OChatViewModelFactory
 
 internal object PackageServiceLocator {
-    @SuppressLint("StaticFieldLeak")
     private var chatViewModel : OChatViewModel? = null
     private var chatRepository : OChatRepository? = null
     private var githubRepository: GithubRepository? = null
+    private var internetHelper : InternetHelper? = null
 
+
+    internal fun provideInternetHelper(context: Context) : InternetHelper{
+        return internetHelper?.let { it } ?: synchronized(context){
+            internetHelper?.let { it } ?: createInternetHelper(context)
+        }
+    }
+
+    private fun createInternetHelper(context: Context): InternetHelper {
+        internetHelper = InternetHelper(context)
+        return internetHelper!!
+    }
 
     fun provideChatRepository(context: Context) : OChatRepository {
         return createChatRepository(context)
@@ -45,14 +56,14 @@ internal object PackageServiceLocator {
     }
 
 
-    fun provideOChatViewModel(context: Context) : OChatViewModel {
-        return chatViewModel?.let { it } ?: synchronized(context){
-            chatViewModel?.let { it } ?: createOChatViewModel(context)
+    fun provideOChatViewModel(context: Context,internetHelper: InternetHelper) : OChatViewModel {
+        return chatViewModel?.let { it } ?: synchronized(internetHelper){
+            chatViewModel?.let { it } ?: createOChatViewModel(context,internetHelper)
         }
     }
 
-    internal fun createOChatViewModel(context: Context) : OChatViewModel{
-        val factor = OChatViewModelFactory(context)
+    internal fun createOChatViewModel(context : Context,internetHelper: InternetHelper) : OChatViewModel{
+        val factor = OChatViewModelFactory(internetHelper)
         chatViewModel = ViewModelProvider(context as ViewModelStoreOwner,factor)[OChatViewModel::class.java]
         return chatViewModel!!
     }

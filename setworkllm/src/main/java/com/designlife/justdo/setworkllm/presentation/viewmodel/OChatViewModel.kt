@@ -1,43 +1,36 @@
 package com.designlife.justdo.setworkllm.presentation.viewmodel
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.designlife.justdo.setworkllm.common.constant.AppURLRouter
 import com.designlife.justdo.setworkllm.common.utils.InternetHelper
 import com.designlife.justdo.setworkllm.common.utils.PackageServiceLocator
-import com.designlife.justdo.setworkllm.common.utils.observeInternet
-import com.designlife.justdo.setworkllm.data.network.NetworkBuilder
 import com.designlife.justdo.setworkllm.data.network.request.ChatSessionRequest
 import com.designlife.justdo.setworkllm.domain.repository.OChatRepository
 import com.designlife.justdo.setworkllm.domain.usecase.OChatUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 
 internal class OChatViewModel(
-    @SuppressLint("StaticFieldLeak") private val context: Context
+    private val internetHelper: InternetHelper
 ) : ViewModel() {
 
-    private val _isInternetAvailable = MutableStateFlow(InternetHelper.isInternetAvailable(context))
+    private val _isInternetAvailable = MutableStateFlow(internetHelper.isInternetAvailable())
 
     val isInternetAvailable : StateFlow<Boolean> = _isInternetAvailable.asStateFlow()
     private val _chatId = mutableStateOf(0L)
     private val _isStreaming = mutableStateOf(false)
     val isStreaming = _isStreaming
 
-    private val _chatText = mutableStateOf("")
-    val chatText = _chatText
+    private val _chatPrompt = mutableStateOf("")
+    val chatPrompt = _chatPrompt
 
     private val _chatReplyText = mutableStateOf("")
     val chatReplyText = _chatReplyText
@@ -56,7 +49,7 @@ internal class OChatViewModel(
     }
 
     init {
-        observeInternet(context){ isAvailable ->
+        internetHelper.observeInternet{ isAvailable ->
             viewModelScope.launch(Dispatchers.Main.immediate) {
                 _isInternetAvailable.value = isAvailable
             }
@@ -66,7 +59,7 @@ internal class OChatViewModel(
     fun onEvent(event : OChatUseCase){
         when(event){
             is OChatUseCase.OnChatEvent -> {
-                _chatText.value = event.text
+                _chatPrompt.value = event.text
             }
             is OChatUseCase.OnChatStartEvent -> {
                 onChatSessionStart()
@@ -81,20 +74,20 @@ internal class OChatViewModel(
     }
 
     private fun onChatSessionStart() {
-        _chatId.value = System.currentTimeMillis() + _chatText.value.hashCode()
+        _chatId.value = System.currentTimeMillis() + _chatPrompt.value.hashCode()
         viewModelScope.launch(Dispatchers.IO) {
             _chatReplyText.value = ""
-            if (_chatText.value.isEmpty()) return@launch
+            if (_chatPrompt.value.isEmpty()) return@launch
 
             _isStreaming.value = true
 
             val request = ChatSessionRequest(
-                prompt = _chatText.value,
+                prompt = _chatPrompt.value,
                 streaming = true,
                 nPredict = "2048",
                 chatId = _chatId.value.toString()
             )
-            _chatText.value = ""
+            _chatPrompt.value = ""
 
             try {
                 if (::_chatRepository.isInitialized){
@@ -123,9 +116,8 @@ internal class OChatViewModel(
 
     private fun onChatSessionKill(){
         try {
-            if (_chatReplyText.value.isNotEmpty()) {
-                _chatHistory.add(_chatReplyText.value)
-                _chatReplyText.value = ""
+            if (_completeChatReply.value.isNotEmpty()) {
+                _chatHistory.add(_completeChatReply.value)
             }
             if (_chatId.value == 0L) return
             viewModelScope.launch(Dispatchers.IO) {
@@ -138,13 +130,12 @@ internal class OChatViewModel(
             e.printStackTrace()
         }finally {
             _chatReplyText.value = ""
-            _completeChatReply.value = ""
         }
     }
 
     fun onClear(){
         _isStreaming.value = false
-        _chatText.value = ""
+        _chatPrompt.value = ""
         _chatReplyText.value = ""
         _completeChatReply.value = ""
         _chatId.value = 0L
