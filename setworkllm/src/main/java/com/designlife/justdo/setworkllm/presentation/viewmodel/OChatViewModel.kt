@@ -22,6 +22,29 @@ internal class OChatViewModel(
     private val internetHelper: InternetHelper
 ) : ViewModel() {
 
+    private val _systemInstructions = listOf<String>(
+        "SYSTEM INSTRUCTION : " +
+                "You are a precision assistant : " +
+                "- Maximum 4 or 5 sentences total" +
+                "- Use the fewest word possible" +
+                "- NO FILTER, NO INTRODUCTION, NO CONCLUSION" +
+                "- No explanation unless explicitly asked" +
+                "- No repetition" +
+                "- Output only the final answer" +
+                "" +
+                "- Format : Plain text only unless formatted asked" +
+                "FAIL CONDITION : IF ANY RULE IS BROKEN, ANSWER INVALID",
+        "Answer in 3 to 4 sentences with no fluff, no extra words, no explanation unless explicitly asked" +
+                "only essential information." +
+                "- NO FILTER, NO INTRODUCTION, NO CONCLUSION" +
+                "If unsure, ask fallback" +
+                "You are precision assistant, Super Computer",
+        "Answer straight in fewer sentences with curiosity and smartness, you are precision ai" +
+                "Make sure, no extra information." +
+                "NO FILTER, NO INTRODUCTION, NO CONCLUSION" +
+                "Direct Answer, well and optimized output"
+    )
+
     private val _isInternetAvailable = MutableStateFlow(internetHelper.isInternetAvailable())
 
     val isInternetAvailable : StateFlow<Boolean> = _isInternetAvailable.asStateFlow()
@@ -75,6 +98,7 @@ internal class OChatViewModel(
 
     private fun onChatSessionStart() {
         _chatId.value = System.currentTimeMillis() + _chatPrompt.value.hashCode()
+        val systemPrompt = _systemInstructions.get((0..2).random())
         viewModelScope.launch(Dispatchers.IO) {
             _chatReplyText.value = ""
             if (_chatPrompt.value.isEmpty()) return@launch
@@ -82,9 +106,9 @@ internal class OChatViewModel(
             _isStreaming.value = true
 
             val request = ChatSessionRequest(
-                prompt = _chatPrompt.value,
+                prompt = "${systemPrompt}\n\n\n\n${_chatPrompt.value}",
                 streaming = true,
-                nPredict = "2048",
+                nPredict = "512",
                 chatId = _chatId.value.toString()
             )
             _chatPrompt.value = ""

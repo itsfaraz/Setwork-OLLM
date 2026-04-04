@@ -42,15 +42,6 @@ internal class SetworkOLLMInternal(
                     PackageServiceLocator.provideGithubRepository(context).fetchBaseUrl()
                 }
                 chatViewModel.initChatRepository(context)
-            }else{
-                internetHelper.observeInternet{ isAvailable ->
-                    if (isAvailable){
-                        scope.launch {
-                            PackageServiceLocator.provideGithubRepository(context).fetchBaseUrl()
-                            initStates()
-                        }
-                    }
-                }
             }
         }catch (e : Exception){
             e.printStackTrace()

@@ -12,9 +12,9 @@ import retrofit2.http.Streaming
 
 internal interface OLLMService {
     @Streaming
-    @POST("interact/start")
+    @POST("setwork/interact/start")
     suspend fun requestChatSession(@Body chatRequest: ChatSessionRequest): Response<ResponseBody>
 
-    @POST("interact/stop")
+    @POST("setwork/interact/stop")
     suspend fun requestChatSessionKill(@Body chatRequest: ChatSessionEndRequest): Response<ChatSessionKillResponse>
 }
