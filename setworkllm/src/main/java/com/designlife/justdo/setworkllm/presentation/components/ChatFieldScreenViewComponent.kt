@@ -40,23 +40,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.designlife.justdo.setworkllm.R
 import com.designlife.justdo.setworkllm.ui.theme.ChatBackgroundColorLight
 import com.designlife.justdo.setworkllm.ui.theme.ComponentColorPrimary
-import com.designlife.justdo.setworkllm.ui.theme.NoInternetStyleFontSize
 import com.designlife.justdo.setworkllm.ui.theme.chatReplyTextStyle
 import com.designlife.justdo.setworkllm.ui.theme.chatViewDescriptionStyle
 import com.designlife.justdo.setworkllm.ui.theme.chatViewHeaderStyle
-import com.designlife.justdo.setworkllm.ui.theme.fontFamily
-import com.designlife.justdo.setworkllm.ui.theme.noInternetTextStyleOne
-import com.designlife.justdo.setworkllm.ui.theme.noInternetTextStyleTwo
 
 @Composable
 internal fun ChatFieldScreenViewComponent(

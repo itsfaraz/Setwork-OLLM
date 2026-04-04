@@ -2,43 +2,62 @@ package com.designlife.justdo.setworkllm
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import com.designlife.justdo.setworkllm.domain.repository.OChatRepository
+import androidx.compose.runtime.mutableStateOf
+import com.designlife.justdo.setworkllm.presentation.components.ChatNotAvailableComponent
 
-public interface SetworkOLLM{
-    public fun init()
-    public fun protocol(setworkMessage: SetworkMessage)
+abstract class SetworkOLLM{
+    internal abstract fun init()
+    abstract fun protocol(setworkMessage: SetworkMessage)
 
-    public fun clean(){
-        try {
-            clear()
-        }catch (e : Exception){
-            e.printStackTrace()
-        }
-    }
+    internal abstract fun clean()
 
-    public @Composable fun ChatTextView()
-    public @Composable fun ChatScreenView()
+    internal @Composable abstract fun ChatTextView()
+    internal @Composable abstract fun ChatScreenView()
 
     interface SetworkMessage {
         fun onChatRelay(message : String)
     }
     companion object{
+        internal val sdkCheck = mutableStateOf(false)
         @Volatile internal var instance : SetworkOLLM? = null
+        private val lock = Any()
 
-        fun chatSDK(context: Context) : SetworkOLLM{
-            return instance?.let { it } ?: synchronized(context){
-                instance?.let { it } ?: createInstance(context)
+        fun chatSDK(context: Context): SetworkOLLM {
+            return instance ?: synchronized(lock) {
+                instance ?: createInstance(context.applicationContext).also {
+                    sdkCheck.value = true
+                    instance = it
+                    instance?.init()
+                }
             }
         }
 
-        private fun clear(){
-            OChatRepository.streamState = false
-            instance = null
+        fun destroy() {
+            synchronized(lock) {
+                instance?.clean()
+                instance = null
+                sdkCheck.value = false
+            }
         }
 
         private fun createInstance(context: Context): SetworkOLLM {
-            instance = SetworkOLLMInternal(context)
-            return instance!!
+            return SetworkOLLMInternal(context)
+        }
+
+        @Composable fun ChatTextView() {
+            if (sdkCheck.value){
+                instance?.ChatTextView()
+            }else {
+                ChatNotAvailableComponent("Setwork chat window is not available")
+            }
+        }
+
+        @Composable fun ChatScreenView() {
+            if (sdkCheck.value){
+                instance?.ChatScreenView()
+            }else {
+                ChatNotAvailableComponent("Setwork chat screen is not available")
+            }
         }
     }
 }

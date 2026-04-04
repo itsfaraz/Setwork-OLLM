@@ -33,28 +33,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.designlife.justdo.setworkllm.R
-import com.designlife.justdo.setworkllm.ui.theme.ChatBackgroundColorLight
 import com.designlife.justdo.setworkllm.ui.theme.ComponentColorGreen
 import com.designlife.justdo.setworkllm.ui.theme.ComponentColorPrimary
 import com.designlife.justdo.setworkllm.ui.theme.Red40
 import com.designlife.justdo.setworkllm.ui.theme.Yellow40
 import com.designlife.justdo.setworkllm.ui.theme.chatTextPlaceholderStyle
-import com.designlife.justdo.setworkllm.ui.theme.chatTextStyle
 import kotlinx.coroutines.delay
 
 @Composable

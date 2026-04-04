@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -26,24 +25,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.designlife.justdo.setworkllm.R
 import com.designlife.justdo.setworkllm.ui.theme.ComponentColorPrimary
-import com.designlife.justdo.setworkllm.ui.theme.NoInternetStyleFontSize
 import com.designlife.justdo.setworkllm.ui.theme.chatReplyTextStyle
 import com.designlife.justdo.setworkllm.ui.theme.chatViewDescriptionStyle
 import com.designlife.justdo.setworkllm.ui.theme.chatViewHeaderStyle
-import com.designlife.justdo.setworkllm.ui.theme.fontFamily
 
 @Composable
 internal fun ChatFieldViewComponent(
@@ -139,25 +130,5 @@ internal fun ChatFieldViewComponent(
 
             }
         }
-
-//        if (isInternetAvailable.value){
-//
-//        }else{
-//            Box(
-//                modifier = Modifier.fillMaxWidth().heightIn(max = 160.dp, min = 140.dp),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Text(buildAnnotatedString {
-//                    withStyle(style = SpanStyle(color = ComponentColorPrimary, fontFamily = fontFamily, fontSize = NoInternetStyleFontSize.value, fontWeight = FontWeight.SemiBold)){
-//                        append("Internet")
-//                    }
-//                    append(" ")
-//                    withStyle(style = SpanStyle(color = Color.Black, fontFamily = fontFamily, fontSize = NoInternetStyleFontSize.value, fontWeight = FontWeight.Normal)){
-//                        append("Is Not Available")
-//                    }
-//                }, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-//            }
-//        }
     }
-
 }

@@ -1,21 +1,13 @@
 package com.designlife.justdo.setworkllm.domain.repository
 
-import android.util.Log
-import com.designlife.justdo.setworkllm.data.network.NetworkBuilder.clearNetwork
 import com.designlife.justdo.setworkllm.data.network.request.ChatSessionEndRequest
 import com.designlife.justdo.setworkllm.data.network.request.ChatSessionRequest
 import com.designlife.justdo.setworkllm.data.network_service.OLLMService
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withTimeout
-import okhttp3.ResponseBody
 import org.json.JSONObject
-import java.io.BufferedReader
 import kotlin.concurrent.Volatile
+import kotlin.coroutines.cancellation.CancellationException
 
 internal class OChatRepository(
     private val chatService: OLLMService
@@ -33,7 +25,7 @@ internal class OChatRepository(
             while (streamState) {
                 val line = reader.readLine() ?: break
                 if (!streamState) {
-                   break
+                    break
                 }
                 if (line.startsWith("data:")) {
                     // Strip ALL "data:" prefixes (handles single and double)
@@ -50,6 +42,8 @@ internal class OChatRepository(
                             if (content.isNotEmpty()) {
                                 emit(content)
                             }
+                        } catch (e : CancellationException){
+
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -61,21 +55,25 @@ internal class OChatRepository(
         }
     }
 
-    suspend fun onChatExit(requestId : String) {
+    suspend fun onChatExit(requestId: String) {
         try {
             streamState = false
-            val response = chatService.requestChatSessionKill(ChatSessionEndRequest(requestId = requestId))
+            val response =
+                chatService.requestChatSessionKill(ChatSessionEndRequest(requestId = requestId))
             response.let {
                 if (it.isSuccessful) {
                     it.body()?.let {}
                 }
             }
+        } catch (e : CancellationException){
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    companion object{
-        @Volatile internal var streamState : Boolean = false
+    companion object {
+        @Volatile
+        internal var streamState: Boolean = false
     }
 }

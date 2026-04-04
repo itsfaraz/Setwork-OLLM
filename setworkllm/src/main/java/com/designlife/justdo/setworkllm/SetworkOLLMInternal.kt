@@ -1,135 +1,128 @@
 package com.designlife.justdo.setworkllm
 
-import android.app.Activity
 import android.content.Context
-import android.widget.Toast
+import android.util.Log
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 import com.designlife.justdo.setworkllm.common.utils.InternetHelper
 import com.designlife.justdo.setworkllm.common.utils.PackageServiceLocator
+import com.designlife.justdo.setworkllm.data.network.NetworkBuilder
+import com.designlife.justdo.setworkllm.domain.repository.OChatRepository
 import com.designlife.justdo.setworkllm.domain.usecase.OChatUseCase
 import com.designlife.justdo.setworkllm.presentation.components.ChatFieldScreenViewComponent
 import com.designlife.justdo.setworkllm.presentation.components.ChatFieldViewComponent
-import com.designlife.justdo.setworkllm.presentation.viewmodel.OChatViewModel
+import com.designlife.justdo.setworkllm.presentation.viewprovider.OChatViewProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancelChildren
 
 internal class SetworkOLLMInternal(
     private val context: Context
-) : SetworkOLLM {
-    private var setworkMessage : SetworkOLLM.SetworkMessage? = null
-    @Volatile private var isInitialized : Boolean = false
-    @Volatile private lateinit var chatViewModel: OChatViewModel
-    private lateinit var scope : CoroutineScope
+) : SetworkOLLM() {
+    private val TAG = this@SetworkOLLMInternal::class.java.simpleName
+    private var setworkMessage: SetworkOLLM.SetworkMessage? = null
     private lateinit var internetHelper: InternetHelper
+    @Volatile
+    private var isInitialized: Boolean = false
+    @Volatile
+    private lateinit var chatViewProvider: OChatViewProvider
+    private lateinit var scope: CoroutineScope
 
+    @Synchronized
     override fun init() {
-        scope = CoroutineScope(Dispatchers.IO + Job())
+        scope = PackageServiceLocator.provideScope()
         internetHelper = PackageServiceLocator.provideInternetHelper(context)
-        this.setworkMessage
-        try {
-            if (!isInitialized){
-                chatViewModel = PackageServiceLocator.provideOChatViewModel(context,internetHelper)
-                isInitialized = true
-            }
-            if (internetHelper.isInternetAvailable()){
-                scope.launch {
-                    PackageServiceLocator.provideGithubRepository(context).fetchBaseUrl()
+        scope?.let { scope ->
+            try {
+                if (!isInitialized) {
+                    chatViewProvider = PackageServiceLocator
+                        .provideOChatViewProvider(scope,internetHelper)
+                    isInitialized = true
                 }
-                chatViewModel.initChatRepository(context)
+                if (internetHelper.isInternetAvailable()) {
+                    chatViewProvider.initChatRepository()
+                }
+            } catch (e : CancellationException){
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }finally {
+                Log.i(TAG, "init: sdk initialized")
             }
-        }catch (e : Exception){
-            e.printStackTrace()
-            Toast.makeText(context, "Network Error", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     override fun protocol(setworkMessage: SetworkOLLM.SetworkMessage) {
         this.setworkMessage = setworkMessage
     }
 
+    @Synchronized
     override fun clean() {
-        super.clean()
         try {
             isInitialized = false
-            if (::chatViewModel.isInitialized){
-                chatViewModel.onClear()
+            if (::scope.isInitialized) {
+                scope.cancel()
             }
+            OChatRepository.streamState = false
+            if (::chatViewProvider.isInitialized) {
+                chatViewProvider.onClear()
+            }
+            NetworkBuilder.clearNetwork()
             PackageServiceLocator.clean()
-            if (::scope.isInitialized){
-                scope.coroutineContext.cancel()
-            }
-        }catch (e : Exception){
+        } catch (e : CancellationException){
+        } catch (e: Exception) {
             e.printStackTrace()
+        }finally {
+            Log.i(TAG, "clean: sdk clean")
         }
-    }
-
-    private fun initStates(){
-        try {
-            if (::chatViewModel.isInitialized){
-                chatViewModel.initChatRepository(context)
-            }
-        }catch (e : Exception){
-            e.printStackTrace()
-        }
-
     }
 
     @Composable
     override fun ChatTextView() {
-        if (internetHelper.isInternetAvailable()){
-            initStates()
-        }else{
-            if (chatViewModel.isInternetAvailable.collectAsState().value){
-                initStates()
-            }
+        if (::chatViewProvider.isInitialized){
+            ChatFieldViewComponent(
+                isInternetAvailable = chatViewProvider.isInternetAvailable.collectAsState(),
+                isThinking = chatViewProvider.isStreaming.value,
+                chatText = chatViewProvider.chatPrompt.value,
+                chatReplyText = chatViewProvider.chatReplyText.value,
+                onChatTextEvent = { chatViewProvider.onEvent(OChatUseCase.OnChatEvent(it)) },
+                onChatStartEvent = { chatViewProvider.onEvent(OChatUseCase.OnChatStartEvent) },
+                onChatStopEvent = {
+                    chatViewProvider.onEvent(OChatUseCase.OnChatStopEvent)
+                },
+                onChatAddEvent = {
+                    setworkMessage?.onChatRelay(chatViewProvider.completeChatReply.value)
+                    chatViewProvider.onEvent(OChatUseCase.OnChatAddEvent)
+                },
+                onBackPressEvent = {
+                }
+            )
         }
-        ChatFieldViewComponent(
-            isInternetAvailable = chatViewModel.isInternetAvailable.collectAsState(),
-            isThinking = chatViewModel.isStreaming.value,
-            chatText = chatViewModel.chatPrompt.value,
-            chatReplyText = chatViewModel.chatReplyText.value,
-            onChatTextEvent = {chatViewModel.onEvent(OChatUseCase.OnChatEvent(it))},
-            onChatStartEvent = {chatViewModel.onEvent(OChatUseCase.OnChatStartEvent)},
-            onChatStopEvent = {
-                chatViewModel.onEvent(OChatUseCase.OnChatStopEvent)
-            },
-            onChatAddEvent = {
-                setworkMessage?.onChatRelay(chatViewModel.completeChatReply.value)
-                chatViewModel.onEvent(OChatUseCase.OnChatAddEvent)
-            },
-            onBackPressEvent = {
-            }
-        )
     }
 
     @Composable
     override fun ChatScreenView() {
-        if (internetHelper.isInternetAvailable()){
-            initStates()
-        }else{
-            if (chatViewModel.isInternetAvailable.collectAsState().value){
-                initStates()
-            }
+        if (::chatViewProvider.isInitialized){
+            ChatFieldScreenViewComponent(
+                isInternetAvailable = chatViewProvider.isInternetAvailable.collectAsState(),
+                isThinking = chatViewProvider.isStreaming.value,
+                chatText = chatViewProvider.chatPrompt.value,
+                chatReplyText = chatViewProvider.chatReplyText.value,
+                chatHistory = chatViewProvider.chatHistory,
+                onChatTextEvent = { chatViewProvider.onEvent(OChatUseCase.OnChatEvent(it)) },
+                onChatStartEvent = { chatViewProvider.onEvent(OChatUseCase.OnChatStartEvent) },
+                onChatStopEvent = {
+                    chatViewProvider.onEvent(OChatUseCase.OnChatStopEvent)
+                },
+                onBackPressEvent = {
+                }
+            )
         }
-        ChatFieldScreenViewComponent(
-            isInternetAvailable = chatViewModel.isInternetAvailable.collectAsState(),
-            isThinking = chatViewModel.isStreaming.value,
-            chatText = chatViewModel.chatPrompt.value,
-            chatReplyText = chatViewModel.chatReplyText.value,
-            chatHistory = chatViewModel.chatHistory,
-            onChatTextEvent = {chatViewModel.onEvent(OChatUseCase.OnChatEvent(it))},
-            onChatStartEvent = {chatViewModel.onEvent(OChatUseCase.OnChatStartEvent)},
-            onChatStopEvent = {
-                chatViewModel.onEvent(OChatUseCase.OnChatStopEvent)
-            },
-            onBackPressEvent = {
-            }
-        )
     }
 }
